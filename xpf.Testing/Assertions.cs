@@ -181,6 +181,11 @@ namespace xpf.Testing
 
                 PropertyInfo actualPropertyInfo = actual.GetType().GetTypeInfo().GetDeclaredProperty(expectedPropertyInfo.Name);
 
+                Assert.AreEqual(actualPropertyInfo.CanRead, expectedPropertyInfo.CanRead, actual.GetType() + "." + actualPropertyInfo.Name + " and " + expected.GetType() + "." + expectedPropertyInfo.Name + " do not have the same getter accessability");
+
+                if (!actualPropertyInfo.CanRead && !expectedPropertyInfo.CanRead)
+                    continue;
+
                 object expectedValue = expectedPropertyInfo.GetValue(expected, null);
                 object actualValue = actualPropertyInfo.GetValue(actual, null);
 
