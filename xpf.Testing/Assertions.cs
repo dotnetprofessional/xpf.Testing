@@ -67,7 +67,7 @@ namespace xpf.Testing
         [Flags]
         public enum CompareOptions
         {
-            Deafult,
+            Default,
             MustBeDerivable = 1,
             NullAndEmptyCollectionEqual = 2
         }
@@ -83,7 +83,7 @@ namespace xpf.Testing
         /// The syntax is object.propertyname|*.propertyname ie MyObject.MyProperty or *.MyProperty. When an asterix is used in replace of an object name any object with that property will be ignored.</param>
         public static void IsComparable(this object actual, object expected, params string[] ignoreProperties)
         {
-            IsComparable(actual, expected, CompareOptions.Deafult, ignoreProperties);
+            IsComparable(actual, expected, CompareOptions.Default, ignoreProperties);
         }
 
         /// <summary>
