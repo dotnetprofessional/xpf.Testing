@@ -8,3 +8,4 @@ Version			Change
 0.0.9			Fixed bug with IsCompare where the property is defined as an object. Will now check type based on value if not null to correctly do the comparison
 0.0.10			Fixed bug with expected and actual reporting around the wrong way.
 0.0.11			Added support for .FromResourceToString and .FromResourceToStream to Convert extension methods
+0.0.12			Changed private method CompareIListTypeRule to support IEnumerables and renamed the method.  Modified order so that CompareRules take precedence over IEnumerable.
