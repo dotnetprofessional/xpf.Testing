@@ -20,6 +20,7 @@ namespace xpf.Testing.Test.MockObjects
         private int _Age;
         private List<EntityB> _EntityBs = new List<EntityB>();
         private List<EntityC> _EntityCs = new List<EntityC>();
+        private HashSet<EntityB> _EntityBSet = null;
 
         public string Name
         {
@@ -44,6 +45,11 @@ namespace xpf.Testing.Test.MockObjects
         {
             get { return this._EntityCs; }
             set { this._EntityCs = value; }
+        }
+        public HashSet<EntityB> EntityBSet
+        {
+            get { return this._EntityBSet; }
+            set { this._EntityBSet = value; }
         }
 
         public object Data { get; set; }

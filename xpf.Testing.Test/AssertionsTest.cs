@@ -117,8 +117,8 @@ namespace xpf.Testing.Test
             // Now check that both instances are the same.
             try
             {
-            actual.IsComparable(expected);
-
+                actual.IsComparable(expected);
+                Assert.Fail("Expected Exception");
             }
             catch (Exception ex)
             {
@@ -225,10 +225,8 @@ namespace xpf.Testing.Test
             // Now check that both instances are the same.
             try
             {
-
                 actual.IsComparable(expected);
                 Assert.Fail("Expected Exception");
-
             }
             catch (Exception ex)
             {
@@ -413,11 +411,11 @@ namespace xpf.Testing.Test
         public void IsComparable_ItemInCollectionVsNoItemInCollection_NullAndEmptyCollectionEqual_Set()
         {
             var a = new EntityA();
-            a.EntityBs = null;
+            a.EntityBs = new List<EntityB>();
+            a.EntityBs.Add(new EntityB());
 
             var b = new EntityA();
-            b.EntityBs = new List<EntityB>();
-            b.EntityBs.Add(new EntityB());
+            b.EntityBs = null;
 
             try
             {
@@ -427,7 +425,7 @@ namespace xpf.Testing.Test
             }
             catch (Exception ex)
             {
-                Assert.IsTrue(true);
+                Assert.AreEqual("actual: . System.Collections.Generic.List`1[xpf.Testing.Test.MockObjects.EntityB].EntityBs is null but actual is not empty.", ex.Message);
             }
         }
 
@@ -445,15 +443,158 @@ namespace xpf.Testing.Test
             {
                 // Now check that both instances are the same.
                 a.IsComparable(b, Assertions.CompareOptions.NullAndEmptyCollectionEqual);
-
                 Assert.Fail("Exception was not thrown");
             }
             catch (Exception ex)
             {
-                Assert.IsTrue(true);
+                Assert.AreEqual("actual: . System.Collections.Generic.List`1[xpf.Testing.Test.MockObjects.EntityB].EntityBs is null but expected is not empty.", ex.Message);
             }
         }
 
+        [TestMethod]
+        public void IsComparable_EmptyLists()
+        {
+            var a = new List<string>();
+            var b = new List<string>();
+
+            // Now check that both instances are the same.
+            a.IsComparable(b);
+        }
+
+        [TestMethod]
+        public void IsComparable_NonEmptyLists()
+        {
+            var a = new List<string>();
+            var b = new List<string>();
+
+            a.Add("Foo");
+            b.Add(string.Format("{0}oo", "F"));
+
+            // Now check that both instances are the same.
+            a.IsComparable(b);
+        }
+
+        [TestMethod]
+        public void IsComparable_EmptyHashSets()
+        {
+            var a = new HashSet<string>();
+            var b = new HashSet<string>();
+
+            // Now check that both instances are the same.
+            a.IsComparable(b);
+        }
+
+        [TestMethod]
+        public void IsComparable_NonEmptyHashSets()
+        {
+            var a = new HashSet<string>();
+            var b = new HashSet<string>();
+
+            a.Add("Foo");
+            b.Add(string.Format("{0}oo", "F"));
+
+            // Now check that both instances are the same.
+            a.IsComparable(b);
+        }
+
+        [TestMethod]
+        public void IsComparable_ListsWithEmptyList()
+        {
+            var a = new List<List<string>>();
+            var b = new List<List<string>>();
+
+            a.Add(new List<string>());
+            b.Add(new List<string>());
+
+            // Now check that both instances are the same.
+            a.IsComparable(b);
+        }
+
+        [TestMethod]
+        public void IsComparable_ListsWithNonEmptyList()
+        {
+            var a = new List<List<string>>();
+            var b = new List<List<string>>();
+
+            a.Add(new List<string>(new [] { "Foo" }));
+            b.Add(new List<string>(new [] { string.Format("{0}oo", "F") }));
+
+            // Now check that both instances are the same.
+            a.IsComparable(b);
+        }
+
+        [TestMethod]
+        public void IsComparable_HashSetsWithEmptyHashSet()
+        {
+            var a = new HashSet<HashSet<string>>();
+            var b = new HashSet<HashSet<string>>();
+
+            a.Add(new HashSet<string>());
+            b.Add(new HashSet<string>());
+
+            // Now check that both instances are the same.
+            a.IsComparable(b);
+        }
+
+        [TestMethod]
+        public void IsComparable_HashSetsWithNonEmptyHashSet()
+        {
+            var a = new HashSet<HashSet<string>>();
+            var b = new HashSet<HashSet<string>>();
+
+            a.Add(new HashSet<string>(new [] { "Foo" }));
+            b.Add(new HashSet<string>(new [] { string.Format("{0}oo", "F") }));
+
+            // Now check that both instances are the same.
+            a.IsComparable(b);
+        }
+
+        [TestMethod]
+        public void IsComparable_EmptyHashSetWithinAnEntity()
+        {
+            var expected = new EntityA();
+            var actual = new EntityA();
+
+            expected.EntityBSet = new HashSet<EntityB>();
+            actual.EntityBSet = new HashSet<EntityB>();
+
+            // Now check that both instances are the same.
+            actual.IsComparable(expected);
+        }
+
+        [TestMethod]
+        public void IsComparable_NonEmptyHashSetWithinAnEntity()
+        {
+            var expected = new EntityA();
+            var actual = new EntityA();
+
+            expected.EntityBSet = new HashSet<EntityB>(new [] { new EntityB { Property1 = "Foo" } });
+            actual.EntityBSet = new HashSet<EntityB>(new[] { new EntityB { Property1 = string.Format("{0}oo", "F") } });
+
+            // Now check that both instances are the same.
+            actual.IsComparable(expected);
+        }
+
+        [TestMethod]
+        public void IsComparable_NonEmptyHashSetWithinAnEntityWithDifferentValues()
+        {
+            var expected = new EntityA();
+            var actual = new EntityA();
+
+            expected.EntityBSet = new HashSet<EntityB>(new[] { new EntityB { Property1 = "Foo" } });
+            actual.EntityBSet = new HashSet<EntityB>(new[] { new EntityB { Property1 = "Bar" } });
+
+            try
+            {
+                // Now check that both instances are the same.
+                actual.IsComparable(expected);
+                Assert.Fail("Expected Exception");
+            }
+            catch (Exception ex)
+            {
+                Assert.AreEqual("expected: Foo but was Bar. System.String.Property1", ex.Message);
+            }
+        }
         #endregion
     }
 }

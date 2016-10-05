@@ -103,15 +103,12 @@ namespace xpf.Testing
             InitializeCompare(options, ignoreProperties);
 
             // Check special cases
-            if (actual.GetType().GetTypeInfo().GetInterface("IList") != null)
-                rule = CompareIListTypeRule;
-            else
-            {
-                // Handle special object types that are passes in as the root object
-                if (CompareRules.ContainsKey(actual.GetType().FullName))
-                    rule = CompareRules[actual.GetType().FullName];
+            // Handle special object types that are passes in as the root object
+            if (CompareRules.ContainsKey(actual.GetType().FullName))
+                rule = CompareRules[actual.GetType().FullName];
+            else if (actual.GetType().GetTypeInfo().GetInterface("IEnumerable") != null)
+                rule = CompareIEnumerableTypeRule;
 
-            }
             if (rule == null)
                 CompareInternal(actual, expected);
             else
@@ -174,6 +171,11 @@ namespace xpf.Testing
 
             foreach (PropertyInfo expectedPropertyInfo in expected.GetType().GetTypeInfo().DeclaredProperties)
             {
+                // Check if this is an indexer
+                if (expectedPropertyInfo.GetIndexParameters().Length != 0)
+                    // Ignore indexers
+                    continue;
+
                 // Check for parameters to ignore
                 if (IgnoreProperties.ContainsKey(expected.GetType().Name + "." + expectedPropertyInfo.Name) || IgnoreProperties.ContainsKey("*." + expectedPropertyInfo.Name))
                     // Ignore this property
@@ -219,8 +221,8 @@ namespace xpf.Testing
                             compareTypeInfo = expectedValue.GetType().GetTypeInfo();
                         }
 
-                        if (typeof (IEnumerable).GetTypeInfo().IsAssignableFrom(compareTypeInfo))
-                            rule = CompareIListTypeRule;
+                        if (typeof(IEnumerable).GetTypeInfo().IsAssignableFrom(compareTypeInfo))
+                            rule = CompareIEnumerableTypeRule;
                         else
                             rule = CompareClassTypeRule;
                     }
@@ -247,26 +249,69 @@ namespace xpf.Testing
         /// <summary>
         /// Processes IList collections
         /// </summary>
-        private static void CompareIListTypeRule(object actual, object expected, PropertyInfo p)
+        private static void CompareIEnumerableTypeRule(object actual, object expected, PropertyInfo p)
         {
-            IList expectedValue = expected as IList;
-            IList actualValue = actual as IList;
+            IEnumerable expectedEnumerable = expected as IEnumerable;
+            IEnumerable actualEnumerable = actual as IEnumerable;
 
-            // Check for the scenario that one collection is null but the other isn't
-            if (expectedValue == null && actualValue != null && actualValue.Count != 0)
-                Assert.IsNotNull(expectedValue, actual.GetType() + "." + (p == null ? "" : p.Name) + " is null but expected is not null.");
-
-            if (actualValue == null && expectedValue != null && expectedValue.Count != 0)
-                Assert.IsNotNull(actualValue, expected.GetType() + "." + (p == null ? "" : p.Name) + " is null but actual is not null.");
-
-            if (!((expectedValue == null || actualValue == null) && (_options & CompareOptions.NullAndEmptyCollectionEqual) == CompareOptions.NullAndEmptyCollectionEqual))
+            // Check for the scenario that one enumerable is null but the other isn't
+            if (expectedEnumerable == null && actualEnumerable != null)
             {
-                Assert.AreEqual(actualValue.Count, expectedValue.Count, expected.GetType() + "." + (p == null ? "" : p.Name) + " item count not equal");
-
-                for (int i = 0; i < expectedValue.Count; i++)
+                if ((_options & CompareOptions.NullAndEmptyCollectionEqual) == CompareOptions.NullAndEmptyCollectionEqual)
                 {
-                    CompareInternal(actualValue[i], expectedValue[i]);
+                    // See if enumerable is empty
+                    foreach (var o in actualEnumerable)
+                    {
+                        // Not empty if in the loop
+                        Assert.IsNotNull(expectedEnumerable, actual.GetType() + "." + (p == null ? "" : p.Name) + " is null but actual is not empty.");
+                    }
                 }
+                else
+                    Assert.IsNotNull(expectedEnumerable, actual.GetType() + "." + (p == null ? "" : p.Name) + " is null but actual is not null.");
+
+                return;
+            }
+
+            if (actualEnumerable == null && expectedEnumerable != null)
+            {
+                if ((_options & CompareOptions.NullAndEmptyCollectionEqual) == CompareOptions.NullAndEmptyCollectionEqual)
+                {
+                    // See if enumerable is empty
+                    foreach (var o in expectedEnumerable)
+                    {
+                        // Not empty if in the loop
+                        Assert.IsNotNull(actualEnumerable, expected.GetType() + "." + (p == null ? "" : p.Name) + " is null but expected is not empty.");
+                    }
+                }
+                else
+                    Assert.IsNotNull(actualEnumerable, expected.GetType() + "." + (p == null ? "" : p.Name) + " is null but expected is not null.");
+
+                return;
+            }
+
+            ICollection expectedCollection = expected as ICollection;
+            ICollection actualCollection = actual as ICollection;
+
+            // Check for collections not having the same count.
+            if (actualCollection != null && expectedCollection != null)
+                Assert.AreEqual(actualCollection.Count, expectedCollection.Count, expected.GetType() + "." + (p == null ? "" : p.Name) + " item count not equal");
+
+            // Go through both enumerables comparing instances
+            var expectedEnumerator = expectedEnumerable.GetEnumerator();
+            var actualEnumerator = actualEnumerable.GetEnumerator();
+            
+            while (true)
+            {
+                var expectedMoveNextResult = expectedEnumerator.MoveNext();
+                var actualMoveNextResult = actualEnumerator.MoveNext();
+
+                if (expectedMoveNextResult != actualMoveNextResult)
+                    Assert.Fail(actual, actual.GetType() + "." + (p == null ? "" : p.Name) + " unequal number of items");
+
+                if (expectedMoveNextResult && actualMoveNextResult)
+                    CompareInternal(actualEnumerator.Current, expectedEnumerator.Current);
+                else
+                    break;
             }
         }
 
@@ -343,7 +388,11 @@ namespace xpf.Testing
                 return;
 
             throw new Exception(string.Format("actual: {0}. {1}", actual, reason));
+        }
 
+        static public void Fail(object actual, string reason = "")
+        {
+            throw new Exception(string.Format("actual: {0}. {1}", actual, reason));
         }
     }
     #endif
